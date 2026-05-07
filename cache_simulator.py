@@ -1,3 +1,5 @@
+import math
+
 class CacheLine:
     """
     One line in a cache set
@@ -24,9 +26,12 @@ class Cache:
     Holds the structure, handles memory access and tracks statistics
 
     Attributes:
-        num_sets (int): how many set 
-        associaticity (int): how many lines per set (ways)
-        block_size (int): size of each block in bytes
+        num_sets (int): How many sets.
+        ways (int): How many lines per set (associativity).
+        block_size (int): Size of each block in bytes.
+        sets (list): The nested list structure holding all CacheLine objects.
+        hits (int): Number of cache hits recorded.
+        misses (int): Number of cache misses recorded.
     """
 
     def __init__(self, num_sets: int, ways: int, block_size: int):
@@ -37,8 +42,57 @@ class Cache:
         self.block_size = block_size
 
         # Internal set structure
-        self.sets = None
+        self.sets = [[CacheLine() for _ in range(ways)] for _ in range(num_sets)]
         
         # Statistics
         self.hits = 0
         self.misses = 0
+
+    def access(self, address):
+        """Access the cache with a memory address.
+
+        Computes the cache set index and tag from the given address, checks the
+        corresponding set for a valid line with a matching tag, and updates
+        hit/miss statistics.
+
+        Args:
+            address (int): The memory address being accessed.
+
+        Returns:
+            tuple[bool, list]: A tuple where the first element is True on a
+            cache hit or miss (access succeeded), and the second element is the
+            block data returned from the cache line.
+        """
+
+        # extract offset, index, tag from address
+        offset_bits = int(math.log2(self.block_size))
+        offset = address & (self.block_size - 1)
+
+        index =(address >> offset_bits) & (self.num_sets - 1)
+        index_bits = int(math.log2(self.num_sets))
+
+        tag = address >> (offset_bits + index_bits)
+
+        for line in self.sets[index]:
+
+            if line.valid and line.tag == tag:
+                self.hits += 1
+                return True, line.data    #hit
+
+        simulated_data = [0] * self.block_size
+        line_to_raplace = self.sets[index][0]
+
+        line_to_raplace.valid = True
+        line_to_raplace.tag = tag
+        line_to_raplace.data = simulated_data
+        self.misses += 1
+        return False, simulated_data               #miss
+
+if __name__ == "__main__":
+    cache_object = Cache(4, 2, 16)
+
+    hit, data = cache_object.access(0x1A3F)
+    print(f"Access 1 - Hit: {hit}, Data: {data}")
+
+    hit, data = cache_object.access(0x1A3F)
+    print(f"Access 2 - Hit: {hit}, Data: {data}")
