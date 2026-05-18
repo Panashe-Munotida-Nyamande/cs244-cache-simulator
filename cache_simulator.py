@@ -43,6 +43,7 @@ class Cache:
 
         # Internal set structure
         self.sets = [[CacheLine() for _ in range(ways)] for _ in range(num_sets)]
+        self.lru_order = [[] for _ in range(num_sets)]
         
         # Statistics
         self.hits = 0
@@ -73,26 +74,54 @@ class Cache:
 
         tag = address >> (offset_bits + index_bits)
 
-        for line in self.sets[index]:
+        for way, line in enumerate(self.sets[index]):
 
             if line.valid and line.tag == tag:
+
+                self.lru_order[index].remove(way)
+                self.lru_order[index].append(way)
+
                 self.hits += 1
-                return True, line.data    #hit
+                return True, line.data
+
+        if len(self.lru_order[index]) == self.ways:
+            way_to_use = self.lru_order[index][0]
+
+        else:
+            for way, line in enumerate(self.sets[index]):
+                if not line.valid:
+                    way_to_use = way
+                    break
 
         simulated_data = [0] * self.block_size
-        line_to_raplace = self.sets[index][0]
+        line_to_raplace = self.sets[index][way_to_use]
 
         line_to_raplace.valid = True
         line_to_raplace.tag = tag
         line_to_raplace.data = simulated_data
+
+        if way_to_use in self.lru_order[index]:
+            self.lru_order[index].remove(way_to_use)
+        
+        self.lru_order[index].append(way_to_use)
+
         self.misses += 1
         return False, simulated_data               #miss
 
 if __name__ == "__main__":
     cache_object = Cache(4, 2, 16)
 
-    hit, data = cache_object.access(0x1A3F)
-    print(f"Access 1 - Hit: {hit}, Data: {data}")
+    # Fill set 3
+    hit, data = cache_object.access(0xFFFF)
+    print(f"Access 1 (0xFFFF) - Hit: {hit}")  # expect: False
 
-    hit, data = cache_object.access(0x1A3F)
-    print(f"Access 2 - Hit: {hit}, Data: {data}")
+    hit, data = cache_object.access(0x9FFF)
+    print(f"Access 2 (0x9FFF) - Hit: {hit}")  # expect: False
+
+    # Refresh 0xFFFF — makes it MRU
+    hit, data = cache_object.access(0xFFFF)
+    print(f"Access 3 (0xFFFF) - Hit: {hit}")  # expect: True
+
+    # Force eviction — 0x9FFF should be evicted (LRU)
+    hit, data = cache_object.access(0x2FFF)
+    print(f"Access 4 (0x2FFF) - Hit: {hit}")  # expect: False
