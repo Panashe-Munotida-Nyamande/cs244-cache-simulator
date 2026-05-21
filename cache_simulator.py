@@ -50,20 +50,15 @@ class Cache:
         self.misses = 0
 
     def access(self, address):
-        """Access the cache with a memory address.
-
-        Computes the cache set index and tag from the given address, checks the
-        corresponding set for a valid line with a matching tag, and updates
-        hit/miss statistics.
-
+        '''
+        Simulates a memory access to the cache.
         Args:
             address (int): The memory address being accessed.
-
         Returns:
-            tuple[bool, list]: A tuple where the first element is True on a
-            cache hit or miss (access succeeded), and the second element is the
-            block data returned from the cache line.
-        """
+            tuple: (hit (bool), data (list))
+                hit: True if it was a cache hit, False if it was a miss.
+                data: The data from the cache line (simulated as a list of bytes).
+        '''
 
         # extract offset, index, tag from address
         offset_bits = int(math.log2(self.block_size))
@@ -94,11 +89,11 @@ class Cache:
                     break
 
         simulated_data = [0] * self.block_size
-        line_to_raplace = self.sets[index][way_to_use]
+        line_to_replace = self.sets[index][way_to_use]
 
-        line_to_raplace.valid = True
-        line_to_raplace.tag = tag
-        line_to_raplace.data = simulated_data
+        line_to_replace.valid = True
+        line_to_replace.tag = tag
+        line_to_replace.data = simulated_data
 
         if way_to_use in self.lru_order[index]:
             self.lru_order[index].remove(way_to_use)
@@ -107,6 +102,28 @@ class Cache:
 
         self.misses += 1
         return False, simulated_data               #miss
+
+    def get_stats(self):
+        """
+        Computes and returns cache performance statistics.
+
+        Returns:
+            dict: A dictionary with the following keys:
+                hit_rate (float): Fraction of accesses that were hits.
+                miss_rate (float): Fraction of accesses that were misses.
+                total_accesses (int): Total number of accesses recorded.
+                Returns all zeros if no accesses have been made.
+        """
+
+        total_accesses = self.hits + self.misses
+
+        if total_accesses == 0:
+            return {"hit_rate": 0.0, "miss_rate": 0.0, "total_accesses": 0}
+
+        hit_rate = self.hits / total_accesses
+        miss_rate = self.misses / total_accesses
+
+        return {"hit_rate": hit_rate, "miss_rate": miss_rate, "total_accesses": total_accesses}
 
 if __name__ == "__main__":
     cache_object = Cache(4, 2, 16)
@@ -125,3 +142,5 @@ if __name__ == "__main__":
     # Force eviction — 0x9FFF should be evicted (LRU)
     hit, data = cache_object.access(0x2FFF)
     print(f"Access 4 (0x2FFF) - Hit: {hit}")  # expect: False
+
+    print(cache_object.get_stats())  # expect: {'hit_rate': 0.25, 'miss_rate': 0.75, 'total_accesses': 4}
