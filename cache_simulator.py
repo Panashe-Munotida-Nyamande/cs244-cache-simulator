@@ -125,6 +125,37 @@ class Cache:
 
         return {"hit_rate": hit_rate, "miss_rate": miss_rate, "total_accesses": total_accesses}
 
+    def parse_config(file_path):
+        """
+        Parses a configuration file to set up the cache parameters.
+
+        The configuration file should have the following format:
+            num_sets=4
+            ways=2
+            block_size=16
+
+        Args:
+            file_path (str): The path to the configuration file.
+        
+        Returns:
+            dict: A dictionary with keys 'num_sets', 'ways', and 'block_size'
+            mapping to their respective integer values.
+        """
+
+        config = {} #an empty dictionary to hold the config values
+
+        with open(file_path, 'r') as f:
+            for line in f:
+
+                # Skip empty lines and comments
+                if not line.strip() or line.strip().startswith('#'):
+                    continue
+
+                key, value = line.strip().split('=')
+                config[key.strip()] = int(value.strip(), 0)  # Convert to int, allowing for hex (0x) and decimal
+        
+        return config
+
 if __name__ == "__main__":
     cache_object = Cache(4, 2, 16)
 
