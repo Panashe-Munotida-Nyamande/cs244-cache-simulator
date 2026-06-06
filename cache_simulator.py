@@ -156,6 +156,31 @@ class Cache:
         
         return config
 
+    def parse_trace(file_path):
+        """
+        Parses a trace file to extract memory access addresses.
+
+        The trace file should have one memory address per line,
+        in hexadecimal (e.g., 0x1A2B3C) or decimal (e.g., 7723) format.
+        
+        Args:
+            file_path (str): The path to the trace file.
+
+        Returns:
+            list: A list of integers representing the parsed memory addresses.
+        """
+
+        addresses = []
+
+        with open(file_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                addresses.append(int(line, 0))  # Convert from hex to int
+
+        return addresses
+
 if __name__ == "__main__":
     cache_object = Cache(4, 2, 16)
 
