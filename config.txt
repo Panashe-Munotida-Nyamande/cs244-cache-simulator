@@ -1,0 +1,4 @@
+# cache configuration
+num_sets=4
+ways=2
+block_size=16

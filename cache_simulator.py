@@ -125,78 +125,70 @@ class Cache:
 
         return {"hit_rate": hit_rate, "miss_rate": miss_rate, "total_accesses": total_accesses}
 
-    def parse_config(file_path):
-        """
-        Parses a configuration file to set up the cache parameters.
+def parse_config(file_path):
+    """
+    Parses a configuration file to set up the cache parameters.
 
-        The configuration file should have the following format:
-            num_sets=4
-            ways=2
-            block_size=16
+    The configuration file should have the following format:
+        num_sets=4
+        ways=2
+        block_size=16
 
-        Args:
-            file_path (str): The path to the configuration file.
-        
-        Returns:
-            dict: A dictionary with keys 'num_sets', 'ways', and 'block_size'
-            mapping to their respective integer values.
-        """
+    Args:
+        file_path (str): The path to the configuration file.
+    
+    Returns:
+        dict: A dictionary with keys 'num_sets', 'ways', and 'block_size'
+        mapping to their respective integer values.
+    """
 
-        config = {} #an empty dictionary to hold the config values
+    config = {} #an empty dictionary to hold the config values
 
-        with open(file_path, 'r') as f:
-            for line in f:
+    with open(file_path, 'r') as f:
+        for line in f:
 
-                # Skip empty lines and comments
-                if not line.strip() or line.strip().startswith('#'):
-                    continue
+            # Skip empty lines and comments
+            if not line.strip() or line.strip().startswith('#'):
+                continue
 
-                key, value = line.strip().split('=')
-                config[key.strip()] = int(value.strip(), 0)  # Convert to int, allowing for hex (0x) and decimal
-        
-        return config
+            key, value = line.strip().split('=')
+            config[key.strip()] = int(value.strip(), 0)  # Convert to int, allowing for hex (0x) and decimal
+    
+    return config
 
-    def parse_trace(file_path):
-        """
-        Parses a trace file to extract memory access addresses.
+def parse_trace(file_path):
+    """
+    Parses a trace file to extract memory access addresses.
 
-        The trace file should have one memory address per line,
-        in hexadecimal (e.g., 0x1A2B3C) or decimal (e.g., 7723) format.
-        
-        Args:
-            file_path (str): The path to the trace file.
+    The trace file should have one memory address per line,
+    in hexadecimal (e.g., 0x1A2B3C) or decimal (e.g., 7723) format.
+    
+    Args:
+        file_path (str): The path to the trace file.
 
-        Returns:
-            list: A list of integers representing the parsed memory addresses.
-        """
+    Returns:
+        list: A list of integers representing the parsed memory addresses.
+    """
 
-        addresses = []
+    addresses = []
 
-        with open(file_path, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith('#'):
-                    continue
-                addresses.append(int(line, 0))  # Convert from hex to int
+    with open(file_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            addresses.append(int(line, 0))  # Convert from hex to int
 
-        return addresses
+    return addresses
 
 if __name__ == "__main__":
-    cache_object = Cache(4, 2, 16)
 
-    # Fill set 3
-    hit, data = cache_object.access(0xFFFF)
-    print(f"Access 1 (0xFFFF) - Hit: {hit}")  # expect: False
+    config = parse_config("config.txt")
+    addresses = parse_trace("trace.txt")
+    cache = Cache(config["num_sets"], config["ways"], config["block_size"])
 
-    hit, data = cache_object.access(0x9FFF)
-    print(f"Access 2 (0x9FFF) - Hit: {hit}")  # expect: False
+    for address in addresses:
+        hit, data = cache.access(address)
+        print(f"Accessing address {hex(address)}: {'Hit' if hit else 'Miss'}")
 
-    # Refresh 0xFFFF — makes it MRU
-    hit, data = cache_object.access(0xFFFF)
-    print(f"Access 3 (0xFFFF) - Hit: {hit}")  # expect: True
-
-    # Force eviction — 0x9FFF should be evicted (LRU)
-    hit, data = cache_object.access(0x2FFF)
-    print(f"Access 4 (0x2FFF) - Hit: {hit}")  # expect: False
-
-    print(cache_object.get_stats())  # expect: {'hit_rate': 0.25, 'miss_rate': 0.75, 'total_accesses': 4}
+    print(cache.get_stats())
