@@ -1,4 +1,5 @@
 import math
+import argparse
 
 class CacheLine:
     """
@@ -183,8 +184,14 @@ def parse_trace(file_path):
 
 if __name__ == "__main__":
 
-    config = parse_config("config.txt")
-    addresses = parse_trace("trace.txt")
+    #create parser with description of the simulator
+    parser = argparse.ArgumentParser(description="A simple cache simulator that reads configuration and trace files.")
+    parser.add_argument("config", help="Path to the configuration file")
+    parser.add_argument("trace", help="Path to the trace file")
+    args = parser.parse_args()
+
+    config = parse_config(args.config)
+    addresses = parse_trace(args.trace)
     cache = Cache(config["num_sets"], config["ways"], config["block_size"])
 
     for address in addresses:
